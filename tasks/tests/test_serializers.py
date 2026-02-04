@@ -70,10 +70,8 @@ class TestTaskSerializer:
 
         task = serializer.save(user=user)
 
-        # slug генерируется автоматически
         assert task.slug != "fake-slug"
 
-        # user берётся из save(user=...), а не из data
         assert task.user == user
 
     def test_serializer_representation(self, user):
