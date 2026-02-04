@@ -55,11 +55,11 @@ docker-compose -f docker-compose-local.yml up --build
 
 В проекте используются три основных окружения:
 
-|Окружение|Описание|Настройки базы и MinIO|
-|---|---|---|
-|`local`|Локальная разработка без Docker, база на ПК|DB: локальный Postgres, MinIO: через Docker|
-|`development`|Локальная разработка в Docker-сети|DB: Postgres в Docker, MinIO в Docker|
-|`production`|Продакшн|DB и MinIO на боевом сервере|
+|Окружение| Описание                                    | Настройки базы и MinIO                        |
+|---|---------------------------------------------|-----------------------------------------------|
+|`local`| Локальная разработка без Docker | DB: локальный Postgres, MinIO: через Docker   |
+|`development`| Локальная разработка в Docker-сети          | DB: Postgres в Docker, Django, MinIO в Docker |
+|`production`| Продакшн (заложена основа)                  | DB и MinIO на сервере                         |
 
 Выбор окружения производится через переменную `.env`:
 
