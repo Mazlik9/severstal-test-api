@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: severstal-minio
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console (браузер)
+    env_file:
+      - .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    tty: true
+    command: >
+      -c "
+        echo 'Waiting for MinIO to be ready...'
+        until mc alias set localminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} --api S3v4; do
+          echo 'MinIO not ready yet... retrying in 2s'
+          sleep 2
+        done
+
+        echo 'MinIO is ready! Creating bucket...'
+        mc mb --ignore-existing localminio/${AWS_STORAGE_BUCKET_NAME}
+
+        echo 'Making bucket public (anyone can download files)...'
+        mc anonymous set download localminio/${AWS_STORAGE_BUCKET_NAME}
+
+        echo 'Bucket ${AWS_STORAGE_BUCKET_NAME} is now public!'
+        echo 'You can access files directly via: http://localhost:9000/${AWS_STORAGE_BUCKET_NAME}/yourfile.jpg'
+        sleep 3
+      "
+    restart: "no"
+
+volumes:
+  minio_data:

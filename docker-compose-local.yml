@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: buildhub-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  minio-setup:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME}
+    entrypoint: /bin/sh
+    command: >
+      -c "
+        echo 'Configuring MinIO client...'
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}
+
+        echo 'Creating bucket if not exists: ${AWS_STORAGE_BUCKET_NAME}'
+        mc mb --ignore-existing local/${AWS_STORAGE_BUCKET_NAME}
+
+        echo 'Setting bucket to public (download allowed)'
+        mc anonymous set download local/${AWS_STORAGE_BUCKET_NAME}
+
+        echo 'MinIO setup complete! Bucket is public.'
+        echo 'Access files via: http://localhost:9000/${AWS_STORAGE_BUCKET_NAME}/...'
+      "
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
+    volumes:
+      - ./:/app
+      - ./media:/app/media
+      - ./static:/app/static
+    command: >
+      sh -c "
+        echo 'Generating JWT keys if missing...'
+        if [ ! -f /app/private_key.pem ] || [ ! -f /app/public_key.pem ]; then
+          openssl genrsa -out /app/private_key.pem 2048
+          openssl rsa -in /app/private_key.pem -pubout -out /app/public_key.pem
+        fi
+        chown appuser:appuser /app/private_key.pem /app/public_key.pem || true
+        chmod 644 /app/private_key.pem /app/public_key.pem || true
+
+        echo 'Running migrations...'
+        python manage.py migrate
+
+        echo 'Starting server...'
+        python manage.py runserver 0.0.0.0:8000
+      "
+    user: root
+
+volumes:
+  postgres_data:
+  minio_data:
