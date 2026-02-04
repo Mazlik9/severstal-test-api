@@ -175,5 +175,9 @@ docker-compose -f docker-compose-local.yml exec backend pytest --cov
 
 - Старые аватары автоматически удаляются из S3 при обновлении.
     
+Интерфес MinIO доступен по адресу
+```
+http://localhost:9001
+```
 
 ---
