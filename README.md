@@ -51,6 +51,26 @@ docker-compose -f docker-compose-local.yml up --build
 
 ---
 
+## Окружения
+
+В проекте используются три основных окружения:
+
+|Окружение|Описание|Настройки базы и MinIO|
+|---|---|---|
+|`local`|Локальная разработка без Docker, база на ПК|DB: локальный Postgres, MinIO: через Docker|
+|`development`|Локальная разработка в Docker-сети|DB: Postgres в Docker, MinIO в Docker|
+|`production`|Продакшн|DB и MinIO на боевом сервере|
+
+Выбор окружения производится через переменную `.env`:
+
+```env
+ENVIRONMENT=development
+```
+
+Файл `.env.example` можно использовать как шаблон для всех окружений. В зависимости от `ENVIRONMENT` Django подхватывает соответствующий `settings` файл (`local.py`, `development.py`, `production.py`).
+
+---
+
 ## JWT аутентификация
 
 - Используется для всех защищённых эндпоинтов.
