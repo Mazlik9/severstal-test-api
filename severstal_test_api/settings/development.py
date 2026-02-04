@@ -26,30 +26,51 @@ DATABASES = {
 # =========================
 # FILE STORAGE (MinIO)
 # =========================
+USE_S3 = os.getenv("USE_S3", "true").lower() == "true"
 
-# Для сохранения файлов внутри Docker
 MINIO_INTERNAL_URL = os.getenv("MINIO_INTERNAL_URL", "http://minio:9000")
-# Публичный URL для фронтенда
 MINIO_PUBLIC_URL = os.getenv("MINIO_PUBLIC_URL", "http://localhost:9000")
 
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
-            "access_key": os.getenv('MINIO_ROOT_USER'),
-            "secret_key": os.getenv('MINIO_ROOT_PASSWORD'),
-            "endpoint_url": MINIO_INTERNAL_URL,
-            "region_name": "us-east-1",
-            "signature_version": "s3v4",
-            "file_overwrite": False,
-            "default_acl": None,
-            "querystring_auth": False,
-            "location": "",
+if USE_S3:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "bucket_name": os.getenv("AWS_STORAGE_BUCKET_NAME", "severstal-local-media"),
+                "access_key": os.getenv("MINIO_ROOT_USER", "minioadmin"),
+                "secret_key": os.getenv("MINIO_ROOT_PASSWORD", "minioadmin123"),
+                "endpoint_url": MINIO_INTERNAL_URL,
+                "region_name": os.getenv("AWS_S3_REGION_NAME", "us-east-1"),
+                "signature_version": "s3v4",
+                "file_overwrite": False,
+                "default_acl": None,
+                "querystring_auth": False,
+                "location": "",
+            },
         },
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+else:
+    # Локальное хранение файлов
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
+# =========================
+# MEDIA
+# =========================
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# =========================
+# STATIC
+# =========================
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")

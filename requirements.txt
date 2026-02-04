@@ -26,12 +26,12 @@ black==24.10.0
 flake8==7.1.1
 isort==5.13.2
 
-# Security & Authentication (добавим для будущего использования)
+# Security & Authentication
 python-decouple==3.8
 django-environ==0.11.2
 
 cryptography==44.0.0
 
-django-storages[boto3]         # Последняя ~1.14.x + boto3 для S3/MinIO
+django-storages[boto3]
 boto3>=1.42.0
 pillow==10.2.0

@@ -51,5 +51,8 @@ urlpatterns = [
     path('api/v1/', include([
         path('', include('users.urls')),
     ])),
+    path('api/v1/', include([
+        path('tasks/', include('tasks.urls')),
+    ])),
 
 ]

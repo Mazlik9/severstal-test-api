@@ -57,7 +57,6 @@ class UserRegistrationSerializer(serializers.Serializer):
             password=validated_data["password"],
         )
 
-        # сохраняем результат сервиса
         self._tokens = {
             "access": result["access"],
             "refresh": result["refresh"],

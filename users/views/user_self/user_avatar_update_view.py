@@ -1,38 +1,56 @@
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework import status
-
-from drf_spectacular.utils import extend_schema, OpenApiResponse
-
-from users.serializers.user_self import UserAvatarSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
 from users.permissions import IsAuthenticatedUserSelf
+from users.serializers.user_self import UserAvatarSerializer
 
-
-class UserAvatarUpdateView(APIView):
+@extend_schema(
+    methods=['PATCH'],
+    summary="Обновление аватара текущего пользователя.",
+    description="Обновление аватара текущего пользователя. Максимальный размер файла 5MB.",
+    request=UserAvatarSerializer,
+    responses={
+        200: UserAvatarSerializer,
+        400: OpenApiResponse(description="Файл не найден или превышен размер"),
+        401: OpenApiResponse(description="Требуется аутентификация"),
+        500: OpenApiResponse(description="Ошибка при загрузке файла")
+    },
+    examples=[
+        OpenApiExample(
+            "Пример запроса",
+            value={
+                "avatar": "файл изображения"
+            },
+            request_only=True,
+        ),
+    ],
+)
+class UserAvatarUpdateView(generics.UpdateAPIView):
+    """
+    Обновление аватара текущего пользователя.
+    Поддерживаются только файлы до 5 MB.
+    """
+    serializer_class = UserAvatarSerializer
     permission_classes = [IsAuthenticatedUserSelf]
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ['patch']
 
-    @extend_schema(
-        tags=["user"],
-        summary="Обновление аватара пользователя",
-        description="Загружает новое изображение аватара. Файл сохраняется в S3.",
-        request=UserAvatarSerializer,
-        responses={
-            200: UserAvatarSerializer,
-            400: OpenApiResponse(description="Ошибка валидации"),
-            401: OpenApiResponse(description="Не авторизован"),
-        },
-    )
-    def patch(self, request):
-        user = request.user
-        serializer = UserAvatarSerializer(
-            instance=user,
-            data=request.data,
-            partial=True,
-        )
+    def get_object(self):
+        return self.request.user
 
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+    def patch(self, request, *args, **kwargs):
+        avatar_file = request.FILES.get('avatar')
+        if not avatar_file:
+            return Response(
+                {"detail": "Файл аватара не найден. Используйте multipart/form-data."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if avatar_file.size > 5 * 1024 * 1024:  # 5 MB
+            return Response(
+                {"detail": "Размер файла превышает 5 MB"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return super().patch(request, *args, **kwargs)

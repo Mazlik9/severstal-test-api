@@ -9,7 +9,7 @@ User = get_user_model()
 @transaction.atomic
 def register_user(*, email: str, full_name: str, password: str) -> dict:
     """
-    Регистрирует пользователя, создаёт Actor и возвращает JWT-токены
+    Регистрирует пользователя и возвращает JWT-токены
     """
 
     user = User.objects.create_user(

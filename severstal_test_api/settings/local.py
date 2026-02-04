@@ -1,11 +1,16 @@
-from .base import *
 import os
+import sys
+from .base import *
 
+# =========================
+# GENERAL
+# =========================
 DEBUG = True
-
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', '0.0.0.0']
 
-# CORS settings for frontend development
+# =========================
+# CORS (frontend dev)
+# =========================
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
@@ -15,9 +20,9 @@ CORS_ALLOW_CREDENTIALS = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'buildhub_dev'),
+        'NAME': os.getenv('DB_NAME', 'severstal_dev'),
         'USER': os.getenv('DB_USER', 'developer'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'dev_password'),
+        'PASSWORD': os.getenv('DB_PASSWORD', '0904'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
     }
@@ -26,25 +31,20 @@ DATABASES = {
 # =========================
 # FILE STORAGE (MinIO)
 # =========================
-
 MINIO_INTERNAL_URL = os.getenv("MINIO_INTERNAL_URL", "http://localhost:9000")
 MINIO_PUBLIC_URL = os.getenv("MINIO_PUBLIC_URL", "http://localhost:9000")
 
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
-            "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
-            "access_key": os.getenv('MINIO_ROOT_USER'),
-            "secret_key": os.getenv('MINIO_ROOT_PASSWORD'),
-            "endpoint_url": MINIO_INTERNAL_URL,
+            "access_key": os.getenv("MINIO_ROOT_USER", "minioadmin"),
+            "secret_key": os.getenv("MINIO_ROOT_PASSWORD", "minioadmin123"),
+            "bucket_name": os.getenv("AWS_STORAGE_BUCKET_NAME", "severstal-local-media"),
+            "endpoint_url": os.getenv("MINIO_INTERNAL_URL", "http://localhost:9000"),
             "region_name": "us-east-1",
-            "signature_version": "s3v4",
-            "addressing_style": "path",
             "file_overwrite": False,
-            "default_acl": None,
             "querystring_auth": False,
-            "location": "",
         },
     },
     "staticfiles": {
@@ -52,4 +52,5 @@ STORAGES = {
     },
 }
 
-
+MEDIA_URL = f"{MINIO_PUBLIC_URL}/"
+MEDIA_ROOT = None

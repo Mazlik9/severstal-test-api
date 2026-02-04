@@ -35,9 +35,6 @@ class UserSelfSerializer(serializers.ModelSerializer):
         if not obj.avatar:
             return None
 
-        # Получаем URL из storage (это может быть /bucket/path/file)
         url = obj.avatar.url
 
-        # Подставляем публичный endpoint MinIO
-        # settings.MINIO_PUBLIC_ENDPOINT нужно задать в settings.py
         return str(url).replace("http://minio:9000", getattr(settings, "MINIO_PUBLIC_URL", "http://localhost:9000"))

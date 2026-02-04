@@ -11,7 +11,7 @@ class UserSelfView(APIView):
     """
     Эндпоинт для работы с профилем текущего пользователя.
     GET    - получить свой профиль
-    PATCH  - обновить редактируемые поля (full_name, phone)
+    PATCH  - обновить редактируемые поля
     """
     permission_classes = [IsAuthenticatedUserSelf]
 
